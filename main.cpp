@@ -1,5 +1,5 @@
 #include <iostream>
-#include "SDL.h"
+#include <SDL2/SDL.h>
 
 int main(int argc, char ** argv) {
     
@@ -30,6 +30,9 @@ int main(int argc, char ** argv) {
                         
                         case SDL_SCANCODE_SPACE:
                             std::cout << "Space Pressed" << std::endl;
+                            break;
+
+                        default:
                             break;
                     }
                     break;
