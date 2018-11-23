@@ -16,7 +16,9 @@ else ()
     include_directories(software-renderer ${SDL2_INCLUDE_DIR})
 endif()
 
-add_executable(software-renderer main.cpp)
+add_executable(software-renderer    main.cpp
+                                    Vector2i.h
+                                    Vector3f.h)
 
 if (WIN32)
     target_link_libraries(software-renderer ${SDL2_LIBRARIES}/SDL2.lib ${SDL2_LIBRARIES}/SDL2main.lib)
