@@ -1,6 +1,8 @@
 #ifndef _VECTOR3F_H
 #define _VECTOR3F_H
 
+#include <cmath>
+
 struct Vector3f {
 
     float x, y, z;
@@ -11,7 +13,7 @@ struct Vector3f {
         z = 0;
     }
 
-    Vector3f(int a, int b, int c) {
+    Vector3f(float a, float b, float c) {
         x = a;
         y = b;
         z = c;
