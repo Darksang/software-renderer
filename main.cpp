@@ -7,6 +7,11 @@
 #include <vector>
 #include <algorithm>
 
+const int SCREEN_WIDTH = 640;
+const int SCREEN_HEIGHT = 480;
+
+const int fbDim = SCREEN_WIDTH * SCREEN_HEIGHT * 3;
+
 Vector3f Red(1.0f, 0, 0);
 
 Vector3f CalculateBarycentric(Vector2i p0, Vector2i p1, Vector2i p2, Vector2i p) {
@@ -35,7 +40,7 @@ Vector3f CalculateBarycentric(Vector2i p0, Vector2i p1, Vector2i p2, Vector2i p)
     return (Vector3f(v, w, u));
 }
 
-void DrawTriangle(Vector2i v0, Vector2i v1, Vector2i v2, std::vector<Vector3f> & fb) {
+void DrawTriangle(Vector2i v0, Vector2i v1, Vector2i v2, std::vector<Vector3f> &fb) {
     // Compute triangle bounding box
     int maxX = std::max(v0.x, std::max(v1.x, v2.x));
     int minX = std::min(v0.x, std::min(v1.x, v2.x));
@@ -55,13 +60,13 @@ void DrawTriangle(Vector2i v0, Vector2i v1, Vector2i v2, std::vector<Vector3f> &
             if (bc.x < 0 || bc.y < 0 || bc.z < 0)
                 continue;
 
-            fb[p.y * 640 + p.x] = Red;
+            fb[p.y * SCREEN_WIDTH + p.x] = Red;
         }
     }
 }
 
-int main(int argc, char ** argv) {
-    
+int main(int argc, char **argv) {
+
     SDL_Init(SDL_INIT_VIDEO);
 
     Vector2i v0(2, 3);
@@ -80,28 +85,28 @@ int main(int argc, char ** argv) {
 
     std::cout << "Dot Product v1/v2: " << dot << std::endl;
 
-    SDL_Window * Window = SDL_CreateWindow("Testing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0);
+    SDL_Window *Window = SDL_CreateWindow("Testing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
 
-    SDL_Renderer * Renderer = SDL_CreateRenderer(Window, -1, SDL_RENDERER_SOFTWARE);
+    SDL_Renderer *Renderer = SDL_CreateRenderer(Window, -1, SDL_RENDERER_SOFTWARE);
 
-    SDL_Texture * Texture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_BGR888, SDL_TEXTUREACCESS_TARGET, 640, 480);
+    SDL_Texture *Texture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_BGR888, SDL_TEXTUREACCESS_TARGET, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     SDL_SetRenderDrawColor(Renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(Renderer);
     SDL_RenderPresent(Renderer);
 
     // Frame buffer
-    std::vector<Vector3f> Framebuffer;
-    Framebuffer.resize(640 * 480);
+    std::vector<Vector3f> FrameBuffer;
+    FrameBuffer.resize(SCREEN_WIDTH * SCREEN_HEIGHT);
 
     std::vector<unsigned char> ColorBuffer;
-    ColorBuffer.resize(640 * 480 * 3);
+    ColorBuffer.resize(SCREEN_WIDTH * SCREEN_HEIGHT * 3);
 
     // Test
-    Vector2i t0[3] = { Vector2i(0, 0), Vector2i(50, 160), Vector2i(70, 80) };
+    Vector2i t0[3] = {Vector2i(0, 0), Vector2i(50, 160), Vector2i(70, 80)};
 
     SDL_Event Event;
-    
+
     bool Running = true;
 
     // Main loop
@@ -110,58 +115,56 @@ int main(int argc, char ** argv) {
         // Process events
         while (SDL_PollEvent(&Event)) {
             switch (Event.type) {
-                case SDL_KEYDOWN:
-                    switch (Event.key.keysym.scancode) {
-                        case SDL_SCANCODE_ESCAPE:
-                            Running = false;
-                            break;
-                        
-                        case SDL_SCANCODE_SPACE:
-                            std::cout << "Space Pressed" << std::endl;
-                            break;
-
-                        default:
-                            break;
-                    }
-                    break;
-
-                case SDL_KEYUP:
-                    break;
-
-                case SDL_QUIT:
+            case SDL_KEYDOWN:
+                switch (Event.key.keysym.scancode) {
+                case SDL_SCANCODE_ESCAPE:
                     Running = false;
+                    break;
+
+                case SDL_SCANCODE_SPACE:
+                    std::cout << "Space Pressed" << std::endl;
                     break;
 
                 default:
                     break;
+                }
+                break;
+
+            case SDL_KEYUP:
+                break;
+
+            case SDL_QUIT:
+                Running = false;
+                break;
+
+            default:
+                break;
             }
         }
 
         // Render frame
 
         // Clear renderer
-        SDL_SetRenderDrawColor(Renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+        SDL_SetRenderDrawColor(Renderer, 43, 53, 56, SDL_ALPHA_OPAQUE);
         SDL_RenderClear(Renderer);
 
         // Reset framebuffer
-        Vector3f clearColor(1, 0.5f, 1);
-        fill(Framebuffer.begin(), Framebuffer.end(), clearColor);
+        Vector3f clearColor(1, 1, 1);
+        fill(FrameBuffer.begin(), FrameBuffer.end(), clearColor);
 
         // Rasterize
-        DrawTriangle(t0[0], t0[1], t0[2], Framebuffer);
+        DrawTriangle(t0[0], t0[1], t0[2], FrameBuffer);
 
         // Display frame
-        const int fbDim = 640 * 480 * 3;
-
         for (int i = 0; i < fbDim; i += 3) {
-            Vector3f rgb = Framebuffer[i / 3];
+            Vector3f rgb = FrameBuffer[i / 3];
 
             ColorBuffer[i] = (unsigned char)(255 * rgb.z);
             ColorBuffer[i + 1] = (unsigned char)(255 * rgb.y);
             ColorBuffer[i + 2] = (unsigned char)(255 * rgb.x);
         }
 
-        SDL_UpdateTexture(Texture, nullptr, ColorBuffer.data(), 640 * 3);
+        SDL_UpdateTexture(Texture, nullptr, ColorBuffer.data(), SCREEN_WIDTH * 3);
 
         SDL_RenderCopy(Renderer, Texture, nullptr, nullptr);
         SDL_RenderPresent(Renderer);
