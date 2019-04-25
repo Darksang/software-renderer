@@ -2,11 +2,11 @@
 
 # Compiling
 
-Create a *build* folder and run CMake from there. Build after the process finishes.
+Create a *build* folder and run CMake from there. Build after the process finishes. If compiling on Mac OS X, make sure to have SDL 2.0 installed, CMake should find it automatically.
 
 # Executing
 
-After the executable is generated, copy *SDL2.dll* from *lib/sdl2/* (32 or 64 bits) to where the executable is.
+**Windows**. After the executable is generated, copy *SDL2.dll* from *lib/sdl2/* (32 or 64 bits) to where the executable is.
 
 # Libraries Used
 
