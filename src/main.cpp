@@ -9,6 +9,10 @@
 static const int SCREEN_WIDTH = 640;
 static const int SCREEN_HEIGHT = 480;
 
+const glm::vec4 RED = glm::vec4(255, 0, 0, 255);
+const glm::vec4 GREEN = glm::vec4(0, 255, 0, 255);
+const glm::vec4 BLUE = glm::vec4(0, 0, 255, 255);
+
 struct Pixel {
     uint8_t b;
     uint8_t g;
@@ -17,6 +21,18 @@ struct Pixel {
 }; 
 
 static Pixel * FrameBuffer;
+
+void DrawPoint(glm::vec2 p, glm::vec4 Color) {
+    Color = glm::clamp(Color, 0.0f, 255.0f);
+
+    int x = static_cast<int>(p.x);
+    int y = static_cast<int>(p.y);
+
+    FrameBuffer[y * SCREEN_WIDTH + x].a = static_cast<uint8_t>(Color.w);
+    FrameBuffer[y * SCREEN_WIDTH + x].r = static_cast<uint8_t>(Color.x);
+    FrameBuffer[y * SCREEN_WIDTH + x].g = static_cast<uint8_t>(Color.y);
+    FrameBuffer[y * SCREEN_WIDTH + x].b = static_cast<uint8_t>(Color.z);
+}
 
 void DrawLine(glm::vec2 p0, glm::vec2 p1, glm::vec4 Color) {
     Color = glm::clamp(Color, 0.0f, 255.0f);
@@ -33,11 +49,12 @@ void DrawLine(glm::vec2 p0, glm::vec2 p1, glm::vec4 Color) {
     if (p0.x > p1.x)
         std::swap(p0, p1);
 
-    float dx = p1.x - p0.x;
-    float dy = p1.y - p0.y;
+    int dx = static_cast<int>(p1.x - p0.x);
+    int dy = static_cast<int>(p1.y - p0.y);
 
-    float m = std::abs((dy / dx));
-    float error = 0.0f;
+    // Use bit shifting instead of multiply
+    int depsilon = std::abs(dy << 1);
+    int epsilon = 0;
 
     int y = p0.y;
 
@@ -54,21 +71,51 @@ void DrawLine(glm::vec2 p0, glm::vec2 p1, glm::vec4 Color) {
             FrameBuffer[y * SCREEN_WIDTH + x].b = static_cast<uint8_t>(Color.z);
         }
 
-        error += m;
+        epsilon += depsilon;
 
-        if (error > 0.5f) {
+        if (epsilon > dx) {
             y += (p1.y > p0.y ? 1 : -1);
-            error -= 1;
+            epsilon -= (dx << 1);
         }
     }
+}
+
+void TestPoints() {
+    DrawPoint(glm::vec2(56.0f, 240.0f), RED);
+    DrawPoint(glm::vec2(480.0f, 189.0f), GREEN);
+    DrawPoint(glm::vec2(86.0f, 75.0f), RED);
+    DrawPoint(glm::vec2(150.0f, 89.0f), BLUE);
+    DrawPoint(glm::vec2(35.0f, 110.0f), GREEN);
+}
+
+void TestLines() {
+    /* Draw 8 regions (octants)
+    DrawLine(glm::vec2(0.0f, 0.0f), glm::vec2(639.0f, 479.0f), GREEN);
+    DrawLine(glm::vec2(0.0f, 479.0f), glm::vec2(639.0f, 0.0f), GREEN);
+    DrawLine(glm::vec2(0.0f, 240.0f), glm::vec2(639.0f, 240.0f), GREEN);
+    DrawLine(glm::vec2(320.0f, 0.0f), glm::vec2(320.0f, 479.0f), GREEN); */
+
+    DrawLine(glm::vec2(639.0f, 479.0f), glm::vec2(0.0f, 0.0f), RED);
+    DrawLine(glm::vec2(639.0f, 0.0f), glm::vec2(0.0f, 479.0f), RED);
+    DrawLine(glm::vec2(639.0f, 240.0f), glm::vec2(0.0f, 240.0f), RED);
+    DrawLine(glm::vec2(320.0f, 479.0f), glm::vec2(320.0f, 0.0f), RED);
+
+    DrawLine(glm::vec2(320.0f, 240.0f), glm::vec2(450.0f, 190.0f), GREEN);
+    DrawLine(glm::vec2(320.0f, 240.0f), glm::vec2(380.0f, 30.0f), GREEN);
+    DrawLine(glm::vec2(320.0f, 240.0f), glm::vec2(260.0f, 60.0f), GREEN);
+    DrawLine(glm::vec2(320.0f, 240.0f), glm::vec2(50.0f, 175.0f), GREEN);
+    DrawLine(glm::vec2(320.0f, 240.0f), glm::vec2(90.0f, 290.0f), GREEN);
+    DrawLine(glm::vec2(320.0f, 240.0f), glm::vec2(240.0f, 370.0f), GREEN);
+    DrawLine(glm::vec2(320.0f, 240.0f), glm::vec2(370.0f, 400.0f), GREEN);
+    DrawLine(glm::vec2(320.0f, 240.0f), glm::vec2(500.0f, 320.0f), GREEN);
 }
 
 int main(int argc, char **argv) {
     SDL_Init(SDL_INIT_VIDEO);
 
-    SDL_Window * Window = SDL_CreateWindow("Software Renderer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
+    SDL_Window * Window = SDL_CreateWindow("Software Rasterizer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
     SDL_Renderer * Renderer = SDL_CreateRenderer(Window, -1, SDL_RENDERER_ACCELERATED);
-    SDL_Texture * Texture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
+    SDL_Texture * Texture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     SDL_Event Event;
 
@@ -77,7 +124,6 @@ int main(int argc, char **argv) {
     memset(FrameBuffer, 0, (SCREEN_WIDTH * SCREEN_HEIGHT) * sizeof(Pixel));
 
     bool Running = true;
-    bool Swap = true;
 
     while (Running) {
         const auto FrameBegin = std::chrono::high_resolution_clock::now();
@@ -92,13 +138,6 @@ int main(int argc, char **argv) {
                     break;
 
                 case SDL_SCANCODE_SPACE:
-                    Swap = !Swap;
-
-                    if (Swap)
-                        std::cout << "Swap True, Draw Green Line" << std::endl;
-                    else
-                        std::cout << "Swap False, Draw Blue Line" << std::endl;
-
                     break;
 
                 default:
@@ -121,20 +160,18 @@ int main(int argc, char **argv) {
         // Invalidate buffers
         memset(FrameBuffer, 0, (SCREEN_WIDTH * SCREEN_HEIGHT) * sizeof(Pixel));
 
-        // Test line
-        if (Swap == true)
-            DrawLine(glm::vec2(30.0f, 235.0f), glm::vec2(30.0f, 298.0f), glm::vec4(0, 255, 0, 255));
-        else 
-            DrawLine(glm::vec2(0.0f, 0.0f), glm::vec2(640.0f, 480.0f), glm::vec4(0, 0, 255, 255));
+        //TestPoints();
+        TestLines();
 
         // Display frame
-        if (SDL_UpdateTexture(Texture, nullptr, FrameBuffer, SCREEN_WIDTH * sizeof(Pixel)) < 0)
-            std::cout << "Update Texture Error" << std::endl << SDL_GetError() << std::endl;
+        SDL_UpdateTexture(Texture, nullptr, FrameBuffer, SCREEN_WIDTH * sizeof(Pixel));
 
-        if (SDL_RenderCopy(Renderer, Texture, nullptr, nullptr) < 0)
-            std::cout << "Render Copy Error" << std::endl << SDL_GetError() << std::endl;
+        SDL_RenderCopy(Renderer, Texture, nullptr, nullptr);
 
         SDL_RenderPresent(Renderer);
+
+        const auto FrameEnd = std::chrono::high_resolution_clock::now();
+        std::cout << "Frame Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(FrameEnd - FrameBegin).count() << "ms" << std::endl;
     }
 
     delete [] FrameBuffer;
