@@ -1,17 +1,22 @@
 #include <iostream>
 #include <sdl2/SDL.h>
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
 #include <glm/glm.hpp>
 
 #include <algorithm>
+#include <vector>
 #include <chrono>
 
-static const int SCREEN_WIDTH = 640;
-static const int SCREEN_HEIGHT = 480;
+static const int SCREEN_WIDTH = 600;
+static const int SCREEN_HEIGHT = 600;
 
 const glm::vec4 RED = glm::vec4(255, 0, 0, 255);
 const glm::vec4 GREEN = glm::vec4(0, 255, 0, 255);
 const glm::vec4 BLUE = glm::vec4(0, 0, 255, 255);
+const glm::vec4 WHITE = glm::vec4(255, 255, 255, 255);
 
 struct Pixel {
     uint8_t b;
@@ -115,6 +120,7 @@ int main(int argc, char **argv) {
 
     SDL_Window * Window = SDL_CreateWindow("Software Rasterizer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, 0);
     SDL_Renderer * Renderer = SDL_CreateRenderer(Window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_RendererFlip Flip = SDL_FLIP_VERTICAL;
     SDL_Texture * Texture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     SDL_Event Event;
@@ -122,6 +128,27 @@ int main(int argc, char **argv) {
     // Initialize required buffers
     FrameBuffer = new Pixel[SCREEN_WIDTH * SCREEN_HEIGHT];
     memset(FrameBuffer, 0, (SCREEN_WIDTH * SCREEN_HEIGHT) * sizeof(Pixel));
+
+    // Obj model loading
+    tinyobj::attrib_t Attrib;
+    std::vector<tinyobj::shape_t> Shapes;
+    std::vector<tinyobj::material_t> Materials;
+    std::string Warn, Err;
+
+    tinyobj::LoadObj(&Attrib, &Shapes, &Materials, &Warn, &Err, "obj/african_head.obj");
+
+    if (!Warn.empty()) {
+    std::cout << Warn << std::endl;
+    }
+
+    if (!Err.empty()) {
+    std::cerr << Err << std::endl;
+    }
+
+    std::cout << "Number of Shapes: " << Shapes.size() << std::endl;
+    std::cout << "Number of Faces: " << Shapes[0].mesh.num_face_vertices.size() << std::endl;
+
+    // Model loading end
 
     bool Running = true;
 
@@ -160,18 +187,48 @@ int main(int argc, char **argv) {
         // Invalidate buffers
         memset(FrameBuffer, 0, (SCREEN_WIDTH * SCREEN_HEIGHT) * sizeof(Pixel));
 
-        //TestPoints();
-        TestLines();
+        // Draw Model Wireframe
+        const auto ModelRenderStart = std::chrono::high_resolution_clock::now();
+        size_t IndexOffset = 0;
+
+        // Loop over faces
+        for (size_t f = 0; f < Shapes[0].mesh.num_face_vertices.size(); f++) {
+            int fv = Shapes[0].mesh.num_face_vertices[f];
+
+            glm::vec2 Vertex[3];
+
+            // Loop over vertices
+            for (size_t v = 0; v < fv; v++) {
+                tinyobj::index_t idx = Shapes[0].mesh.indices[IndexOffset + v];
+                tinyobj::real_t vx = Attrib.vertices[3 * idx.vertex_index + 0];
+                tinyobj::real_t vy = Attrib.vertices[3 * idx.vertex_index + 1];
+                tinyobj::real_t vz = Attrib.vertices[3 * idx.vertex_index + 2];
+
+                Vertex[v] = glm::vec2(vx, vy);
+            }
+
+            glm::vec2 p0 = glm::vec2( (Vertex[0].x + 1.) * (SCREEN_WIDTH / 2.), (Vertex[0].y + 1) * (SCREEN_HEIGHT / 2.));
+            glm::vec2 p1 = glm::vec2( (Vertex[1].x + 1.) * (SCREEN_WIDTH / 2.), (Vertex[1].y + 1) * (SCREEN_HEIGHT / 2.));
+            glm::vec2 p2 = glm::vec2( (Vertex[2].x + 1.) * (SCREEN_WIDTH / 2.), (Vertex[2].y + 1) * (SCREEN_HEIGHT / 2.));
+
+            DrawLine(p0, p1, WHITE);
+            DrawLine(p1, p2, WHITE);
+            DrawLine(p2, p0, WHITE);
+
+            IndexOffset += fv;
+        }
+        const auto ModelRenderEnd = std::chrono::high_resolution_clock::now();
+        std::cout << "Model Render Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(ModelRenderEnd - ModelRenderStart).count() << "ms" << std::endl;
 
         // Display frame
         SDL_UpdateTexture(Texture, nullptr, FrameBuffer, SCREEN_WIDTH * sizeof(Pixel));
 
-        SDL_RenderCopy(Renderer, Texture, nullptr, nullptr);
+        SDL_RenderCopyEx(Renderer, Texture, nullptr, nullptr, 0, nullptr, Flip);
 
         SDL_RenderPresent(Renderer);
 
         const auto FrameEnd = std::chrono::high_resolution_clock::now();
-        std::cout << "Frame Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(FrameEnd - FrameBegin).count() << "ms" << std::endl;
+        //std::cout << "Frame Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(FrameEnd - FrameBegin).count() << "ms" << std::endl;
     }
 
     delete [] FrameBuffer;
