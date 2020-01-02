@@ -10,6 +10,8 @@
 #include <vector>
 #include <chrono>
 
+#include "window.h"
+
 static const int SCREEN_WIDTH = 600;
 static const int SCREEN_HEIGHT = 600;
 
