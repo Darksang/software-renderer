@@ -1,26 +1,59 @@
 #include "window.h"
 
-Window::Window(const uint32_t Width, const uint32_t Height, const std::string & Name) : m_width(Width), m_height(Height) {
-    m_window = nullptr;
-    m_renderer = nullptr;
-    m_texture = nullptr;
+#include <algorithm>
+
+Window::Window(uint32_t Width, uint32_t Height, const std::string & Name) : Width(Width), Height(Height) {
+    SDLWindow = nullptr;
+    Renderer = nullptr;
+    Texture = nullptr;
 
     // Initialize SDL Video module
     SDL_Init(SDL_INIT_VIDEO);
 
-    m_window = SDL_CreateWindow(Name.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, Width, Height, SDL_WINDOW_ALLOW_HIGHDPI);
-    m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_ACCELERATED);
-    m_texture = SDL_CreateTexture(m_renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, Width, Height);
+    SDLWindow = SDL_CreateWindow(Name.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, Width, Height, SDL_WINDOW_ALLOW_HIGHDPI);
+    Renderer = SDL_CreateRenderer(SDLWindow, -1, SDL_RENDERER_ACCELERATED);
+    Texture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, Width, Height);
+
+    // Allocate framebuffer (ARGB8888)
+    FrameBuffer.resize(Width * Height * 4);
 }
 
 Window::~Window() {
-    SDL_DestroyWindow(m_window);
-    SDL_DestroyRenderer(m_renderer);
-    SDL_DestroyTexture(m_texture);
+    SDL_DestroyWindow(SDLWindow);
+    SDL_DestroyRenderer(Renderer);
+    SDL_DestroyTexture(Texture);
 
-    m_window = nullptr;
-    m_renderer = nullptr;
-    m_texture = nullptr;
+    SDLWindow = nullptr;
+    Renderer = nullptr;
+    Texture = nullptr;
+
+    FrameBuffer.clear();
 
     SDL_Quit();
+}
+
+void Window::Clear() {
+    SDL_RenderClear(Renderer);
+    std::fill(FrameBuffer.begin(), FrameBuffer.end(), 0);
+}
+
+void Window::SwapBuffers() {
+    SDL_UpdateTexture(Texture, nullptr, FrameBuffer.data(), Width * 4);
+
+    SDL_RenderCopy(Renderer, Texture, nullptr, nullptr);
+    SDL_RenderPresent(Renderer);
+}
+
+void Window::UpdateFramebuffer(const std::vector<glm::vec4> & Buffer) {
+    int32_t BufferSize = Width * Height * 4;
+
+    for (int32_t i = 0; i < BufferSize; i += 4) {
+        glm::vec4 Pixel = Buffer[i / 4];
+
+        // If Pixel values were between 0 and 1, we'd have to multiply by 255
+        FrameBuffer[i] = (uint8_t)(Pixel.b);
+        FrameBuffer[i + 1] = (uint8_t)(Pixel.g);
+        FrameBuffer[i + 2] = (uint8_t)(Pixel.r);
+        FrameBuffer[i + 3] = (uint8_t)(Pixel.a);
+    }
 }

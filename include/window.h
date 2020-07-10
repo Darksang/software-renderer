@@ -2,21 +2,30 @@
 #define WINDOW_H
 
 #include <iostream>
+#include <vector>
 
 #include <sdl2/SDL.h>
 
+#include <glm/glm.hpp>
+
 class Window {
     public:
-        Window(const uint32_t Width, const uint32_t Height, const std::string & Name);
+        Window(uint32_t Width, uint32_t Height, const std::string & Name);
         ~Window();
 
-    private:
-        SDL_Window * m_window;
-        SDL_Renderer * m_renderer;
-        SDL_Texture * m_texture;
+        void Clear();
+        void SwapBuffers();
+        void UpdateFramebuffer(const std::vector<glm::vec4> & Buffer);
 
-        uint32_t m_width;
-        uint32_t m_height;
+    private:
+        SDL_Window * SDLWindow;
+        SDL_Renderer * Renderer;
+        SDL_Texture * Texture;
+
+        std::vector<uint8_t> FrameBuffer;
+
+        uint32_t Width;
+        uint32_t Height;
 };
 
 #endif

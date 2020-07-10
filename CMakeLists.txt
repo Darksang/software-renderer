@@ -12,7 +12,8 @@ set(INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 include_directories(${INCLUDE_DIR})
 
 set(SRC ${SRC_DIR}/main.cpp
-        ${SRC_DIR}/window.cpp)
+        ${SRC_DIR}/window.cpp
+        ${SRC_DIR}/renderer.cpp)
 
 # Executable definition
 add_executable(${PROJECT_NAME} ${SRC})
