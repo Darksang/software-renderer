@@ -4,17 +4,24 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include <algorithm>
 #include <vector>
+#include <unordered_map>
 #include <chrono>
 
 #include "window.h"
 #include "renderer.h"
+#include "mesh.h"
 
 static const int SCREEN_WIDTH = 1280;
 static const int SCREEN_HEIGHT = 720;
+
+static const float FOV = 80.0f;
 
 const glm::vec4 RED = glm::vec4(255, 0, 0, 255);
 const glm::vec4 GREEN = glm::vec4(0, 255, 0, 255);
@@ -84,9 +91,79 @@ int main(int argc, char **argv) {
 
     // Model loading end
 
+    // https://vulkan-tutorial.com/Loading_models
+
+    std::vector<Vertex> VertexBuffer;
+    std::vector<uint32_t> IndexBuffer;
+    std::unordered_map<Vertex, uint32_t> UniqueVertices;
+
+    tinyobj::attrib_t Attributes;
+    std::vector<tinyobj::shape_t> Shapes;
+    std::vector<tinyobj::material_t> Materials;
+    std::string Warning, Error;
+
+    if (tinyobj::LoadObj(&Attributes, &Shapes, &Materials, &Warning, &Error, "obj/cube.obj")) {
+        std::cout << "Number of Vertices = " << (int)(Attributes.vertices.size() / 3) << std::endl;
+        std::cout << "Number of Normals = " << (int)(Attributes.normals.size() / 3) << std::endl;
+        std::cout << "Number of TexCoords = " << (int)(Attributes.texcoords.size() / 2) << std::endl;
+        std::cout << "Number of Shapes = " << Shapes.size() << std::endl;
+
+        for (const auto & Shape : Shapes) {
+            for (const auto & Index : Shape.mesh.indices) {
+                Vertex V{};
+
+                V.Position = {
+                    Attributes.vertices[3 * Index.vertex_index],
+                    Attributes.vertices[3 * Index.vertex_index + 1],
+                    Attributes.vertices[3 * Index.vertex_index + 2]
+                };
+
+                V.Normal = {
+                    Attributes.normals[3 * Index.normal_index],
+                    Attributes.normals[3 * Index.normal_index + 1],
+                    Attributes.normals[3 * Index.normal_index + 2],
+                };
+
+                V.TexCoords = {
+                    Attributes.texcoords[2 * Index.texcoord_index],
+                    Attributes.texcoords[2 * Index.texcoord_index + 1]
+                };
+
+                // If this vertex isn't duplicate, add it
+                if (UniqueVertices.count(V) == 0) {
+                    UniqueVertices[V] = static_cast<uint32_t>(VertexBuffer.size());
+                    VertexBuffer.push_back(V); 
+                }
+
+                IndexBuffer.push_back(UniqueVertices[V]);
+            }
+        }
+
+        std::cout << "Vertices = " << VertexBuffer.size() << std::endl;
+        std::cout << "Indices = " << IndexBuffer.size() << std::endl;
+        std::cout << "Triangles = " << IndexBuffer.size() / 3 << std::endl;
+    } else {
+        return -1;
+    }
+
+    Mesh * Object = new Mesh();
+    Object->VertexBuffer = VertexBuffer;
+    Object->IndexBuffer = IndexBuffer;
+
+    //
+
     SDL_Event Event;
 
     bool Running = true;
+
+    // Camera and projection
+    glm::vec3 CameraPosition = glm::vec3(0.0f, 0.0f, 3.0f);
+    glm::vec3 CameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+    glm::vec3 CameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    glm::mat4 ViewMatrix = glm::lookAt(CameraPosition, CameraPosition + CameraFront, CameraUp);
+
+    glm::mat4 ProjectionMatrix = glm::perspective(glm::radians(FOV), (float)(SCREEN_WIDTH / SCREEN_HEIGHT), 0.1f, 100.0f);
 
     while (Running) {
         const auto FrameBegin = std::chrono::high_resolution_clock::now();
@@ -123,15 +200,26 @@ int main(int argc, char **argv) {
         MainWindow.Clear();
 
         // glClear
-        Rasterizer->Clear(RED);
+        Rasterizer->Clear(glm::vec4(51.0f, 76.5f, 76.5f, 255));
 
-        // Rendering
+        // Model
+        //glm::mat4 ModelMatrix = glm::rotate(ModelMatrix, 0.025f, glm::vec3(0, 1, 0));
+        glm::mat4 ModelMatrix = glm::mat4(1.0f);
+        ModelMatrix = glm::translate(ModelMatrix, glm::vec3(0.0f, 0.0f, 0.0f));
+        // Model * View
+        glm::mat4 MV = ViewMatrix * ModelMatrix;
+        // Model * View * Projection
+        glm::mat4 MVP = ProjectionMatrix * MV;
+
+        Rasterizer->DrawMesh(Object, MVP);
+
+        /* Rendering
         Rasterizer->DrawPoint(glm::vec2(480.0f, 189.0f), GREEN);
         Rasterizer->DrawPoint(glm::vec2(150.0f, 89.0f), BLUE);
         Rasterizer->DrawPoint(glm::vec2(35.0f, 110.0f), GREEN);
         Rasterizer->DrawPoint(glm::vec2(0.0f, 0.0f), GREEN);
 
-        Rasterizer->DrawLine(glm::vec2(0.0f, 0.0f), glm::vec2(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2), BLUE);
+        Rasterizer->DrawLine(glm::vec2(0.0f, 0.0f), glm::vec2(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2), BLUE); */
 
         // Update the window buffer with the new frame
         MainWindow.UpdateFramebuffer(Rasterizer->GetFrameBuffer());
@@ -186,6 +274,8 @@ int main(int argc, char **argv) {
     }
 
     delete Rasterizer;
+
+    delete Object;
 
     SDL_Quit();
 

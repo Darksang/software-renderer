@@ -13,7 +13,9 @@ include_directories(${INCLUDE_DIR})
 
 set(SRC ${SRC_DIR}/main.cpp
         ${SRC_DIR}/window.cpp
-        ${SRC_DIR}/renderer.cpp)
+        ${SRC_DIR}/renderer.cpp
+        ${SRC_DIR}/texture.cpp
+        ${SRC_DIR}/mesh.cpp)
 
 # Executable definition
 add_executable(${PROJECT_NAME} ${SRC})
