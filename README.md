@@ -8,6 +8,8 @@ Create a *build* folder and run CMake from there. Build after the process finish
 
 **Windows**. After the executable is generated, copy *SDL2.dll* from *lib/sdl2/* (32 or 64 bits) to where the executable is.
 
+Copy all folders from *assets* folders to where the executable is.
+
 # Libraries Used
 
 - [SDL2](https://www.libsdl.org/)

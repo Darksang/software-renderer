@@ -7,6 +7,8 @@
 
 #include <vector>
 
+#include "texture.h"
+
 struct Vertex {
     glm::vec3 Position;
     glm::vec3 Normal;
@@ -33,8 +35,12 @@ class Mesh {
         Mesh();
         ~Mesh();
 
+        void LoadOBJ(const std::string & File);
+        void LoadTexture(const std::string & File);
+
         std::vector<Vertex> VertexBuffer;
         std::vector<uint32_t> IndexBuffer;
+        Texture * MeshTexture;
 };
 
 #endif

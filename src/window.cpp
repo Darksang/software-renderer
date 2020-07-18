@@ -7,10 +7,10 @@ Window::Window(uint32_t Width, uint32_t Height, const std::string & Name) : Widt
     Renderer = nullptr;
     Texture = nullptr;
 
-    // Initialize SDL Video module
-    SDL_Init(SDL_INIT_VIDEO);
+    // Initialize SDL
+    SDL_Init(SDL_INIT_EVERYTHING);
 
-    SDLWindow = SDL_CreateWindow(Name.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, Width, Height, SDL_WINDOW_ALLOW_HIGHDPI);
+    SDLWindow = SDL_CreateWindow(Name.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, Width, Height, 0);
     Renderer = SDL_CreateRenderer(SDLWindow, -1, SDL_RENDERER_ACCELERATED);
     Texture = SDL_CreateTexture(Renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, Width, Height);
 
@@ -33,8 +33,9 @@ Window::~Window() {
 }
 
 void Window::Clear() {
+    SDL_SetRenderDrawColor(Renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(Renderer);
-    std::fill(FrameBuffer.begin(), FrameBuffer.end(), 0);
+    //std::fill(FrameBuffer.begin(), FrameBuffer.end(), 0);
 }
 
 void Window::SwapBuffers() {
@@ -50,10 +51,12 @@ void Window::UpdateFramebuffer(const std::vector<glm::vec4> & Buffer) {
     for (int32_t i = 0; i < BufferSize; i += 4) {
         glm::vec4 Pixel = Buffer[i / 4];
 
-        // If Pixel values were between 0 and 1, we'd have to multiply by 255
         FrameBuffer[i] = (uint8_t)(Pixel.b);
         FrameBuffer[i + 1] = (uint8_t)(Pixel.g);
         FrameBuffer[i + 2] = (uint8_t)(Pixel.r);
         FrameBuffer[i + 3] = (uint8_t)(Pixel.a);
     }
+
+    glm::vec4 Pixel = Buffer[0];
+    std::cout << "Pixel at 0,0: (" << Pixel.r << ", " << Pixel.g << ", " << Pixel.b << ", " << Pixel.a << ")" << std::endl;
 }
