@@ -56,7 +56,4 @@ void Window::UpdateFramebuffer(const std::vector<glm::vec4> & Buffer) {
         FrameBuffer[i + 2] = (uint8_t)(Pixel.r);
         FrameBuffer[i + 3] = (uint8_t)(Pixel.a);
     }
-
-    glm::vec4 Pixel = Buffer[0];
-    std::cout << "Pixel at 0,0: (" << Pixel.r << ", " << Pixel.g << ", " << Pixel.b << ", " << Pixel.a << ")" << std::endl;
 }

@@ -4,6 +4,7 @@
 #include "stb_image.h"
 
 Texture::Texture(const std::string & File) {
+    stbi_set_flip_vertically_on_load(true);
     Data = stbi_load(File.c_str(), &Width, &Height, &NumChannels, 0);
 }
 

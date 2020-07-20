@@ -34,8 +34,6 @@ int main(int argc, char **argv) {
     glm::vec3 CameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 CameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-    
-
     glm::mat4 ProjectionMatrix = glm::perspective(glm::radians(FOV), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
 
     GouraudShader SimpleShader;
@@ -43,7 +41,6 @@ int main(int argc, char **argv) {
     SDL_Event Event;
 
     bool Running = true;
-    bool Point = false;
 
     while (Running) {
         const auto FrameBegin = std::chrono::high_resolution_clock::now();
@@ -57,18 +54,14 @@ int main(int argc, char **argv) {
                     Running = false;
                     break;
 
-                case SDL_SCANCODE_SPACE:
-                    Point = !Point;
-                    break;
-
                 case SDL_SCANCODE_W:
                     CameraPosition += 0.05f * CameraFront;
-                    std::cout << "Camera: (" << CameraPosition.x << ", " << CameraPosition.y << ", " << CameraPosition.z << ")" << std::endl;
+                    //std::cout << "Camera: (" << CameraPosition.x << ", " << CameraPosition.y << ", " << CameraPosition.z << ")" << std::endl;
                     break;
 
                 case SDL_SCANCODE_S:
                     CameraPosition -= 0.05f * CameraFront;
-                    std::cout << "Camera: (" << CameraPosition.x << ", " << CameraPosition.y << ", " << CameraPosition.z << ")" << std::endl;
+                    //std::cout << "Camera: (" << CameraPosition.x << ", " << CameraPosition.y << ", " << CameraPosition.z << ")" << std::endl;
                     break;
 
                 default:
@@ -100,7 +93,8 @@ int main(int argc, char **argv) {
         //glm::mat4 ModelMatrix = glm::rotate(ModelMatrix, 0.025f, glm::vec3(0, 1, 0));
         glm::mat4 ModelMatrix = glm::mat4(1.0f);
         ModelMatrix = glm::translate(ModelMatrix, glm::vec3(0.0f, 0.0f, 0.0f));
-        //ModelMatrix = glm::rotate(ModelMatrix, glm::radians(180.0f), glm::vec3(1, 0, 0));
+        ModelMatrix = glm::rotate(ModelMatrix, glm::radians(-90.0f), glm::vec3(0, 1, 0));
+        ModelMatrix = glm::rotate(ModelMatrix, glm::radians(-90.0f), glm::vec3(1, 0, 0));
         //ModelMatrix = glm::rotate(ModelMatrix, glm::radians(45.0f), glm::vec3(0, 1, 0));
         // Model * View
         glm::mat4 MV = ViewMatrix * ModelMatrix;
@@ -108,8 +102,6 @@ int main(int argc, char **argv) {
         glm::mat4 MVP = ProjectionMatrix * MV;
 
         Rasterizer->DrawMesh(Object, MVP);
-        if (Point)
-            Rasterizer->TestLines();
 
         // Update the window buffer with the new frame
         MainWindow.UpdateFramebuffer(Rasterizer->GetFrameBuffer()); // TODO: This is too slow
