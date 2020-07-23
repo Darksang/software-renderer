@@ -22,6 +22,12 @@ add_executable(${PROJECT_NAME} ${SRC})
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}" "${INCLUDE_DIR}")
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 11)
 
+# OpenMP
+find_package(OpenMP)
+if (OpenMP_CXX_FOUND)
+    target_link_libraries(${PROJECT_NAME} OpenMP::OpenMP_CXX)
+endif()
+
 # SDL2 Windows
 if (CMAKE_SIZEOF_VOID_P EQUAL 8 AND WIN32)
     target_link_libraries(${PROJECT_NAME} ${LIB_DIR}/sdl2/win64/SDL2.lib ${LIB_DIR}/sdl2/win64/SDL2main.lib)

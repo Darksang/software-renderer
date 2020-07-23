@@ -30,6 +30,7 @@ class Renderer {
         void DrawPoint(const glm::vec2 & p, const glm::vec4 & Color);
         void DrawLine(glm::vec2 p0, glm::vec2 p1, const glm::vec4 & Color);
         void DrawMesh(Mesh * Mesh, const glm::mat4 & Matrix);
+        void DrawWireframe(Mesh * Mesh, const glm::mat4 & Matrix);
 
         const std::vector<glm::vec4> & GetFrameBuffer() { return FrameBuffer; }
 

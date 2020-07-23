@@ -98,11 +98,6 @@ void Renderer::DrawMesh(Mesh * Mesh, const glm::mat4 & Matrix) {
         glm::vec4 v1Clip = VertexShader(v1, Matrix);
         glm::vec4 v2Clip = VertexShader(v2, Matrix);
 
-        glm::vec3 VaryingIntensity;
-        VaryingIntensity[0] = std::max(0.0f, glm::dot(n0, glm::vec3(1, 1, 1)));
-        VaryingIntensity[1] = std::max(0.0f, glm::dot(n1, glm::vec3(1, 1, 1)));
-        VaryingIntensity[2] = std::max(0.0f, glm::dot(n2, glm::vec3(1, 1, 1)));
-
         // Perspective divide and convert to NDC
         float OneOverW0 = 1.0f / v0Clip.w;
         float OneOverW1 = 1.0f / v1Clip.w;
@@ -172,6 +167,60 @@ void Renderer::DrawMesh(Mesh * Mesh, const glm::mat4 & Matrix) {
                 }
             }
         }
+    }
+}
+
+void Renderer::DrawWireframe(Mesh * Mesh, const glm::mat4 & Matrix) {
+    int32_t TotalTriangles = Mesh->IndexBuffer.size() / 3;
+
+    // Iterate all triangles
+    for (int32_t i = 0; i < TotalTriangles; i++) {
+        // Fetch triangle attributes
+        glm::vec3 v0 = Mesh->VertexBuffer[Mesh->IndexBuffer[i * 3]].Position;
+        glm::vec3 v1 = Mesh->VertexBuffer[Mesh->IndexBuffer[i * 3 + 1]].Position;
+        glm::vec3 v2 = Mesh->VertexBuffer[Mesh->IndexBuffer[i * 3 + 2]].Position;
+
+        glm::vec3 n0 = Mesh->VertexBuffer[Mesh->IndexBuffer[i * 3]].Normal;
+        glm::vec3 n1 = Mesh->VertexBuffer[Mesh->IndexBuffer[i * 3 + 1]].Normal;
+        glm::vec3 n2 = Mesh->VertexBuffer[Mesh->IndexBuffer[i * 3 + 2]].Normal;
+
+        glm::vec2 uv0 = Mesh->VertexBuffer[Mesh->IndexBuffer[i * 3]].TexCoords;
+        glm::vec2 uv1 = Mesh->VertexBuffer[Mesh->IndexBuffer[i * 3 + 1]].TexCoords;
+        glm::vec2 uv2 = Mesh->VertexBuffer[Mesh->IndexBuffer[i * 3 + 2]].TexCoords;
+
+        // Execute Vertex Shader for each vertex (to Clip Space)
+        glm::vec4 v0Clip = VertexShader(v0, Matrix);
+        glm::vec4 v1Clip = VertexShader(v1, Matrix);
+        glm::vec4 v2Clip = VertexShader(v2, Matrix);
+
+        // Perspective divide and convert to NDC
+        float OneOverW0 = 1.0f / v0Clip.w;
+        float OneOverW1 = 1.0f / v1Clip.w;
+        float OneOverW2 = 1.0f / v2Clip.w;
+
+        glm::vec3 v0NDC = v0Clip * OneOverW0;
+        glm::vec3 v1NDC = v1Clip * OneOverW1;
+        glm::vec3 v2NDC = v2Clip * OneOverW2;
+
+        // Viewport transform (to Raster Space)
+        glm::vec2 v0Raster = { (v0NDC.x + 1) * RendererViewport.Width * 0.5f, (1 - v0NDC.y) * RendererViewport.Height * 0.5f };
+        glm::vec2 v1Raster = { (v1NDC.x + 1) * RendererViewport.Width * 0.5f, (1 - v1NDC.y) * RendererViewport.Height * 0.5f };
+        glm::vec2 v2Raster = { (v2NDC.x + 1) * RendererViewport.Width * 0.5f, (1 - v2NDC.y) * RendererViewport.Height * 0.5f };
+
+        // Perform back-face culling
+        float Area = EdgeFunction(v0Raster, v1Raster, v2Raster);
+        if (Area < 0)
+            continue;
+
+        // Viewport clipping
+        Viewport BoundingBox;
+        if (!IsInsideViewport(v0Raster, v1Raster, v2Raster, BoundingBox))
+            continue;
+
+        // TODO: Crashes if it's outside viewport
+        DrawLine(v0Raster, v1Raster, glm::vec4(255, 255, 255, 255));
+        DrawLine(v1Raster, v2Raster, glm::vec4(255, 255, 255, 255));
+        DrawLine(v2Raster, v0Raster, glm::vec4(255, 255, 255, 255));
     }
 }
 

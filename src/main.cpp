@@ -104,7 +104,10 @@ int main(int argc, char **argv) {
         Rasterizer->DrawMesh(Object, MVP);
 
         // Update the window buffer with the new frame
-        MainWindow.UpdateFramebuffer(Rasterizer->GetFrameBuffer()); // TODO: This is too slow
+        //const auto CopyBufferBegin = std::chrono::high_resolution_clock::now();
+        MainWindow.UpdateFramebuffer(Rasterizer->GetFrameBuffer());
+        //const auto CopyBufferEnd = std::chrono::high_resolution_clock::now();
+        //std::cout << "Copy Buffer Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(CopyBufferEnd - CopyBufferBegin).count() << "ms" << std::endl;
         MainWindow.SwapBuffers();
 
         const auto FrameEnd = std::chrono::high_resolution_clock::now();

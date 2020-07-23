@@ -48,6 +48,7 @@ void Window::SwapBuffers() {
 void Window::UpdateFramebuffer(const std::vector<glm::vec4> & Buffer) {
     int32_t BufferSize = Width * Height * 4;
 
+#pragma omp parallel for
     for (int32_t i = 0; i < BufferSize; i += 4) {
         glm::vec4 Pixel = Buffer[i / 4];
 
