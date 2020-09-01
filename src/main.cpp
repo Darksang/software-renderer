@@ -101,7 +101,10 @@ int main(int argc, char **argv) {
         // Model * View * Projection
         glm::mat4 MVP = ProjectionMatrix * MV;
 
+        const auto ModelBegin = std::chrono::high_resolution_clock::now();
         Rasterizer->DrawMesh(Object, MVP);
+        const auto ModelEnd = std::chrono::high_resolution_clock::now();
+        //std::cout << "Model Rasterization: " << std::chrono::duration_cast<std::chrono::milliseconds>(ModelEnd - ModelBegin).count() << "ms" << std::endl;
 
         // Update the window buffer with the new frame
         //const auto CopyBufferBegin = std::chrono::high_resolution_clock::now();

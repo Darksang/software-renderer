@@ -79,6 +79,7 @@ void Renderer::DrawMesh(Mesh * Mesh, const glm::mat4 & Matrix) {
     int32_t TotalTriangles = Mesh->IndexBuffer.size() / 3;
 
     // Iterate all triangles
+#pragma omp parallel for
     for (int32_t i = 0; i < TotalTriangles; i++) {
         // Fetch triangle attributes
         glm::vec3 v0 = Mesh->VertexBuffer[Mesh->IndexBuffer[i * 3]].Position;
